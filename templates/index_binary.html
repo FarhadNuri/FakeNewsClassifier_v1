@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bengali Fake News Detector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #080808;
+            --surface: #111111;
+            --surface-hover: #161616;
+            --border: #222222;
+            --border-focus: #444444;
+            --text-primary: #f0f0f0;
+            --text-secondary: #b0b0b0;
+            --text-muted: #808080;
+            --accent: #f0f0f0;
+            --accent-dim: #2a2a2a;
+            --error-bg: #1a0a0a;
+            --error-text: #ff6b6b;
+            --error-border: #3a1515;
+            --fake-color: #ff6b6b;
+            --authentic-color: #51cf66;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            color: var(--text-primary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+        }
+
+        .header {
+            margin-bottom: 48px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 500;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 0.1px;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 24px 0;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+            font-weight: 300;
+            resize: vertical;
+            min-height: 130px;
+            line-height: 1.6;
+            transition: border-color 0.2s ease;
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+        }
+
+        .hint {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--text-primary);
+            color: var(--bg);
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: background 0.2s ease, opacity 0.2s ease;
+            margin-top: 4px;
+        }
+
+        button:hover {
+            background: #ffffff;
+        }
+
+        button:active {
+            opacity: 0.85;
+        }
+
+        button:disabled {
+            background: var(--border);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 14px 0;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid var(--border);
+            border-top-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading span {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .error {
+            display: none;
+            margin-top: 16px;
+            padding: 14px 16px;
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: 6px;
+            color: var(--error-text);
+            font-size: 13px;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .result {
+            display: none;
+            margin-top: 28px;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideUp 0.35s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-section-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .prediction-box {
+            padding: 18px 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 24px;
+        }
+
+        .prediction-box .pred-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .prediction-box .pred-value {
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+        }
+
+        .prediction-box .pred-value.fake {
+            color: var(--fake-color);
+        }
+
+        .prediction-box .pred-value.authentic {
+            color: var(--authentic-color);
+        }
+
+        .confidence {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .scores {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .score-item {
+            display: grid;
+            grid-template-columns: 80px 1fr 52px;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .score-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .score-label.fake {
+            color: var(--fake-color);
+        }
+
+        .score-label.authentic {
+            color: var(--authentic-color);
+        }
+
+        .score-bar {
+            height: 2px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: var(--text-primary);
+            border-radius: 2px;
+            transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .score-fill.fake {
+            background: var(--fake-color);
+        }
+
+        .score-fill.authentic {
+            background: var(--authentic-color);
+        }
+
+        .score-value {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bengali Fake News Detector</h1>
+            <p>Analyze Bengali news articles for authenticity</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="input-group">
+            <label for="textInput">News Article Text</label>
+            <textarea id="textInput" placeholder="এখানে বাংলা নিউজ আর্টিকেল লিখুন..."></textarea>
+            <p class="hint">Press Ctrl + Enter to analyze</p>
+        </div>
+
+        <button id="predictBtn" onclick="predict()">Analyze Article</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>Analyzing article...</span>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result">
+            <div class="prediction-box">
+                <div class="pred-label">Classification Result</div>
+                <div class="pred-value" id="prediction"></div>
+                <div class="confidence" id="confidence"></div>
+            </div>
+
+            <p class="result-section-label">Confidence Scores</p>
+            <div class="scores" id="scores"></div>
+        </div>
+    </div>
+
+    <script>
+        async function predict() {
+            const text = document.getElementById('textInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            const predictBtn = document.getElementById('predictBtn');
+
+            resultDiv.classList.remove('show');
+            errorDiv.classList.remove('show');
+
+            if (!text) {
+                errorDiv.textContent = 'Please enter some text to analyze.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            loadingDiv.classList.add('show');
+            predictBtn.disabled = true;
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response. Check server logs.');
+                }
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResult(data);
+                } else {
+                    throw new Error(data.error || `Prediction failed (Status: ${response.status})`);
+                }
+            } catch (error) {
+                console.error('Prediction error:', error);
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.classList.add('show');
+            } finally {
+                loadingDiv.classList.remove('show');
+                predictBtn.disabled = false;
+            }
+        }
+
+        function displayResult(data) {
+            const predictionEl = document.getElementById('prediction');
+            const confidenceEl = document.getElementById('confidence');
+            const scoresDiv = document.getElementById('scores');
+            const resultDiv = document.getElementById('result');
+
+            
+            predictionEl.textContent = data.prediction;
+            predictionEl.className = 'pred-value ' + data.prediction.toLowerCase();
+
+            
+            const confidencePercent = (data.confidence * 100).toFixed(2);
+            confidenceEl.textContent = `Confidence: ${confidencePercent}%`;
+
+            
+            scoresDiv.innerHTML = '';
+            data.all_scores.forEach(item => {
+                const percentage = (item.score * 100).toFixed(2);
+                const labelClass = item.label.toLowerCase();
+                const row = document.createElement('div');
+                row.className = 'score-item';
+                row.innerHTML = `
+                    <span class="score-label ${labelClass}">${item.label}</span>
+                    <div class="score-bar">
+                        <div class="score-fill ${labelClass}" style="width: 0%"></div>
+                    </div>
+                    <span class="score-value">${percentage}%</span>
+                `;
+                scoresDiv.appendChild(row);
+                requestAnimationFrame(() => {
+                    row.querySelector('.score-fill').style.width = percentage + '%';
+                });
+            });
+
+            resultDiv.classList.add('show');
+        }
+
+        document.getElementById('textInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') predict();
+        });
+    </script>
+</body>
+</html>
